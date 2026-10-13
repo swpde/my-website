@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>RSD · 三条指令的分派、调度与提交</title>
+<style>
+:root{color-scheme:light dark;--bg:#f5f7fa;--panel:#fff;--text:#1c293b;--sub:#57667b;--line:#dce3ed;--soft:#edf1f7;--accent:#245ed5;--button:#245ed5;--on-button:#fff;--i0:#2865ce;--i1:#b76813;--i2:#16794f;--warn:#94620c;--shadow:0 8px 28px #152b4810}
+@media(prefers-color-scheme:dark){:root{--bg:#10151e;--panel:#18212e;--text:#e4ebf5;--sub:#a4b3c7;--line:#304056;--soft:#202d40;--accent:#88b4ff;--button:#315fab;--on-button:#fff;--i0:#82b3ff;--i1:#f0b369;--i2:#76d8a9;--warn:#ecc17b;--shadow:none}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1220px;margin:auto;padding:28px 28px 40px}h1{font-size:25px;font-weight:650;margin:0 0 6px}h2{font-size:17px;margin:0;font-weight:600}h3{font-size:15px;margin:0;font-weight:600}p{margin:0}small,.small{font-size:13px;color:var(--sub)}button{font:inherit;cursor:pointer;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 14px}button:hover:not(:disabled){background:var(--soft)}button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}button:disabled{opacity:.4;cursor:default}.primary{background:var(--button);color:var(--on-button);border-color:var(--button)}.primary:hover:not(:disabled){background:var(--button);filter:brightness(1.12)}code{font-family:ui-monospace,Consolas,monospace;font-size:.93em}.intro{color:var(--sub)}.topline{display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:space-between}.scope{display:inline-block;background:var(--soft);color:var(--sub);padding:5px 9px;border-radius:6px;font-size:13px}.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 0 14px}.counter{font-variant-numeric:tabular-nums;min-width:100px;text-align:center}.event{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);padding:14px 18px;border-radius:8px;box-shadow:var(--shadow)}.event p{margin-top:5px;color:var(--sub)}.program{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}.program button{text-align:left;padding:13px 15px;border-left:4px solid var(--identity)}.program button[aria-pressed=true]{background:var(--soft);outline:2px solid var(--identity);outline-offset:-2px}.program strong{display:block;font-size:14px;color:var(--identity);margin-bottom:4px}.program code{display:block}.program small{display:block;margin-top:7px}.i0{--identity:var(--i0)}.i1{--identity:var(--i1)}.i2{--identity:var(--i2)}.inputs{display:flex;gap:8px 20px;flex-wrap:wrap;color:var(--sub);font-size:13px;margin-bottom:18px}.path{font-size:14px;color:var(--sub);margin-bottom:10px}.pipeline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}.column{position:relative;border:1px solid var(--line);background:var(--panel);border-radius:10px;min-height:270px;padding:14px}.column:not(:last-child)::after{content:'→';position:absolute;right:-21px;top:42%;color:var(--sub);font-size:22px}.column>small{display:block;margin:3px 0 12px}.slot{min-height:64px;margin-top:9px}.empty{padding:15px 7px;color:var(--sub);font-size:13px;text-align:center;border:1px dashed var(--line);border-radius:6px}.token{padding:10px 11px;background:color-mix(in srgb,var(--identity) 9%,var(--panel));border-left:3px solid var(--identity);border-radius:6px;margin-top:9px}.token.selected{outline:1px solid var(--identity);outline-offset:2px}.token strong{color:var(--identity);font-size:14px}.token code{display:block;margin:4px 0;font-size:12px;overflow-wrap:anywhere}.token .state{font-size:13px}.token .why{font-size:12px;color:var(--sub);margin-top:4px}.unit{margin-top:12px}.unit h3{font-size:13px;color:var(--sub)}.unit .empty{padding:9px}.done-tag{color:var(--identity)}.rob{margin:22px 0 16px;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:10px}.section-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}.rob-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}.rob-item{position:relative;border:1px solid var(--line);border-radius:7px;padding:12px;min-height:100px}.rob-item strong{color:var(--identity)}.rob-item small{display:block;margin-top:4px}.rob-item .state{margin-top:5px;font-size:14px}.rob-item.head{border:2px solid var(--accent);padding:11px}.rob-item.committed{background:color-mix(in srgb,var(--identity) 8%,var(--panel))}.head-tag{font-size:12px;margin-left:9px;color:var(--accent)}.registers{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}.reg-panel{background:var(--panel);border:1px solid var(--line);padding:16px;border-radius:10px}table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}th,td{text-align:left;padding:8px 7px;border-bottom:1px solid var(--line)}th{font-size:12px;color:var(--sub);font-weight:500}tr:last-child td{border-bottom:0}.value{font-variant-numeric:tabular-nums}.pending{color:var(--sub)}.bypass{color:var(--i0)}.orders{display:flex;flex-wrap:wrap;gap:14px 32px;margin-top:15px;font-size:14px}.orders span{font-variant-numeric:tabular-nums}.explain{padding:16px 0 0}.explain h2{font-size:15px}.explain p{margin-top:6px;font-size:14px;color:var(--sub)}.foot{margin-top:20px;padding-top:13px;border-top:1px solid var(--line);font-size:12px;color:var(--sub)}
+@media(max-width:900px){.pipeline{grid-template-columns:repeat(2,minmax(0,1fr))}.column:nth-child(2)::after{content:''}.registers{grid-template-columns:1fr}.column{min-height:220px}}
+@media(max-width:560px){main{padding:20px 16px}h1{font-size:21px}.program,.pipeline,.rob-items{grid-template-columns:1fr}.program{gap:8px}.program button{padding:10px 12px}.program code{font-size:14px}.column{min-height:130px}.column:not(:last-child)::after{content:'↓';right:50%;top:auto;bottom:-28px}.pipeline{gap:29px}.counter{min-width:88px}.controls{gap:7px}.controls button{padding:9px 11px}.registers table{font-size:13px}th,td{padding:8px 4px}.rob-item{min-height:82px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+<style id="lesson-site-navigation">
+.lesson-site-nav{box-sizing:border-box;max-width:1220px;margin:0 auto;padding:16px 28px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;border-bottom:1px solid #cbd9d1;font:14px/1.6 system-ui,"Microsoft YaHei",sans-serif;color:#245c4a;background:#edf4ef}
+.lesson-site-nav a{color:#245c4a;text-decoration:none}.lesson-site-nav a:hover{text-decoration:underline}.lesson-site-nav a:focus-visible{outline:3px solid #126d59;outline-offset:4px}.lesson-site-nav span{font-size:12px;color:#527267}
+@media(prefers-color-scheme:dark){.lesson-site-nav{background:#172c26;border-color:#355147;color:#cde3d9}.lesson-site-nav a{color:#b9dfce}.lesson-site-nav span{color:#9dc0af}}
+@media(max-width:560px){.lesson-site-nav{padding:13px 16px;gap:8px 16px}.lesson-site-nav span{display:none}}
+</style>
+</head>
+<body>
+<nav class="lesson-site-nav" aria-label="教程导航"><a href="../">← 返回教程首页</a><span>RSD / IQ 演示</span><a href="../cache/">Cache 教程 →</a></nav>
+<main>
+  <div class="topline"><div><h1>三条指令如何通过 IQ 乱序执行</h1><p class="intro">分派登记任务，调度选择任务，ROB 保持顺序提交。</p></div><span class="scope">教学事件演示 · 非 RSD 逐拍仿真</span></div>
+  <div class="controls"><button type="button" id="prev">← 上一步</button><span class="counter" id="counter"></span><button type="button" class="primary" id="next">下一步 →</button><button type="button" id="play">自动播放</button></div>
+  <section class="event" aria-live="polite"><h2 id="event-title"></h2><p id="event-detail"></p></section>
+  <div class="program" aria-label="选择要观察的指令">
+    <button type="button" class="i0" data-instruction="0" aria-pressed="false"><strong>I0 · 乘法</strong><code>mul x5, x1, x2</code><small>2 × 3 → p40 → x5</small></button>
+    <button type="button" class="i1" data-instruction="1" aria-pressed="true"><strong>I1 · 加法，依赖 I0</strong><code>add x6, x5, x3</code><small>p40 + 10 → p41 → x6</small></button>
+    <button type="button" class="i2" data-instruction="2" aria-pressed="false"><strong>I2 · 独立加法</strong><code>add x7, x8, x9</code><small>20 + 4 → p42 → x7</small></button>
+  </div>
+  <div class="inputs"><span>输入：x1 = 2，x2 = 3，x3 = 10，x8 = 20，x9 = 4</span><span>依赖：I0 ── p40 ──→ I1；I2 独立</span></div>
+  <div class="path">重命名 → 分派 → IQ → 调度 / 发射 → 读数 / 执行 → 写回</div>
+  <div class="pipeline" role="group" aria-label="指令当前所在位置">
+    <section class="column"><h2>前端 / 重命名</h2><small>顺序进入，建立物理版本</small><div id="front"></div></section>
+    <section class="column"><h2>IQ 发射队列</h2><small>保存等待首次执行的操作</small><div id="iq"></div></section>
+    <section class="column"><h2>执行通道</h2><small>调度选择后送入对应通道</small><div class="unit"><h3>乘法通道</h3><div id="mul"></div></div><div class="unit"><h3>整数加法通道</h3><div id="alu"></div></div></section>
+    <section class="column"><h2>已写回的结果</h2><small>结果已保存，仍需检查提交顺序</small><div id="writeback"></div></section>
+  </div>
+  <section class="rob"><div class="section-head"><h2>ROB / ActiveList · 按程序顺序记账</h2><small>从重命名时分配；亮边框表示当前队首</small></div><div class="rob-items" id="rob"></div><div class="orders"><div>完成顺序：<span id="finish-order">—</span></div><div>提交顺序：<span id="commit-order">—</span></div></div></section>
+  <div class="registers">
+    <section class="reg-panel"><div class="section-head"><h2>推测映射与物理结果</h2><small>写回更新这里的有效结果</small></div><table><thead><tr><th>逻辑目的</th><th>当前 RMT 映射</th><th>新物理结果</th></tr></thead><tbody id="physical"></tbody></table></section>
+    <section class="reg-panel"><div class="section-head"><h2>已提交架构状态</h2><small>提交后才对程序正式生效</small></div><table><thead><tr><th>寄存器</th><th>当前值</th><th>状态来源</th></tr></thead><tbody id="architectural"></tbody></table></section>
+  </div>
+  <section class="explain" aria-live="polite"><h2 id="focus-title"></h2><p id="focus-detail"></p></section>
+  <div class="foot">这是用于解释依赖、旁路、写回与提交的教学序列，不是测得的 RSD 时钟周期。p40 / p41 / p42 是示例分配编号；前端和读数阶段被适度合并。RSD 的真实调度还包含推测唤醒与失败重放，本演示展示数据正常到达的路径。</div>
+</main>
+<script>
+(() => {
+  'use strict';
+  const instruction = [
+    {id:0,asm:'mul x5, x1, x2',renamed:'p40 ← src(x1) × src(x2)',result:6,arch:'x5',phys:'p40',old:99},
+    {id:1,asm:'add x6, x5, x3',renamed:'p41 ← p40 + src(x3)',result:16,arch:'x6',phys:'p41',old:88},
+    {id:2,asm:'add x7, x8, x9',renamed:'p42 ← src(x8) + src(x9)',result:24,arch:'x7',phys:'p42',old:77}
+  ];
+  // Snapshots are teaching events; no invented hardware cycle or unit latency is exposed.
+  const events = [
+    {title:'先看输入与真实依赖',detail:'I1 需要 I0 生成的 x5 新值；I2 的两个输入都独立。现在三条指令尚未重命名。',front:[0,1,2],allocated:[],iq:[],done:[],committed:[]},
+    {title:'重命名 I0、I1，同时分配 ROB 项',detail:'I0 为 x5 分配 p40；I1 为 x6 分配 p41，并把它的 x5 源固定为 p40。值尚未产生，也能先建立依赖。',front:[0,1,2],allocated:[0,1],iq:[],done:[],committed:[]},
+    {title:'分派：I0、I1 登记到 IQ',detail:'I0 的输入已就绪；I1 的 p40 依赖尚未解除。I1 可以进入 IQ 等待，分派不要求它立即能执行。',front:[2],allocated:[0,1],iq:[0,1],done:[],committed:[]},
+    {title:'调度选择 I0，发射到乘法通道',detail:'乘法通道可用，I0 离开 IQ 开始计算 2 × 3。I1 仍留在 IQ 等待 p40。',front:[2],allocated:[0,1],iq:[1],mul:0,done:[],committed:[]},
+    {title:'I2 随后重命名并分派到 IQ',detail:'为 x7 分配 p42，并分配第三个 ROB 项。I2 的输入已就绪，虽然前面 I1 在等待，它仍可成为调度候选。',front:[],allocated:[0,1,2],iq:[1,2],mul:0,done:[],committed:[]},
+    {title:'I2 越过 I1，发射到整数通道',detail:'调度选择就绪的 I2，计算 20 + 4；乘法通道中的 I0 继续执行。两类执行通道可以同时工作。',front:[],allocated:[0,1,2],iq:[1],mul:0,alu:2,done:[],committed:[]},
+    {title:'I2 先完成并写回，但不能先提交',detail:'p42 收到有效结果 24，I2 的 ROB 项已完成。队首 I0 还没完成，因此 x7 的已提交值仍是旧值 77。',front:[],allocated:[0,1,2],iq:[1],mul:0,done:[2],committed:[]},
+    {title:'I0 的结果可通过旁路提供',detail:'乘法得到 6，可通过旁路送给消费者。这里展示结果已经可供使用、尚未写回的观察时点；I1 的依赖可以解除。',front:[],allocated:[0,1,2],iq:[1],mul:0,bypass:true,done:[2],committed:[]},
+    {title:'I1 使用旁路值执行；I0 写回',detail:'I1 离开 IQ，把旁路提供的 6 与 x3 的 10 相加；I0 写回 p40 = 6，并把自己的 ROB 项标为完成。',front:[],allocated:[0,1,2],iq:[],alu:1,usedBypass:true,done:[2,0],committed:[]},
+    {title:'I0 顺序提交；I1 也完成写回',detail:'队首 I0 可以先提交，x5 正式变为 6。I1 写回 p41 = 16，I2 早已完成；此时 x6、x7 的架构值仍未更新。',front:[],allocated:[0,1,2],iq:[],done:[2,0,1],committed:[0]},
+    {title:'I1、I2 按程序顺序提交',detail:'连续队首都已完成，可以按 I1 → I2 的顺序提交；这里合并展示这一提交事件。最终 x5 = 6，x6 = 16，x7 = 24。',front:[],allocated:[0,1,2],iq:[],done:[2,0,1],committed:[0,1,2]}
+  ];
+  const $ = id => document.getElementById(id);
+  let step=2, selected=1, timer=null;
+  const escape = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function token(id,state,why,event) {
+    const op=instruction[id], renamed=event.allocated.includes(id);
+    return '<div class="token i'+id+(selected===id?' selected':'')+'" data-moving="'+id+'"><strong>I'+id+'</strong><code>'+escape(renamed?op.renamed:op.asm)+'</code><div class="state">'+escape(state)+'</div><div class="why">'+escape(why||'')+'</div></div>';
+  }
+  function fill(id,tokens,label) {$(id).innerHTML=tokens.length?tokens.join(''):'<div class="empty">'+label+'</div>';}
+  function focus(event) {
+    const id=selected, op=instruction[id];
+    $('focus-title').textContent='观察 I'+id+' · '+op.asm;
+    let message;
+    if(event.committed.includes(id)) message='已提交：'+op.arch+' = '+op.result+'。它按程序顺序成为正式架构状态；先完成的 I2 没有越过老指令提交。';
+    else if(event.done.includes(id)) message='已写回 '+op.phys+' = '+op.result+'，ROB 已标记完成。'+(id===2?'它仍需等待前面的未提交项；x7 仍是旧值 77。': '是否能提交，还取决于它是不是连续可提交的 ROB 队首。');
+    else if(event.alu===id) message=id===1?'正在计算 6 + 10；6 来自 I0 的旁路结果。I1 已离开 IQ，执行与最终提交仍是两个时点。':'正在计算 20 + 4。I2 输入独立，调度可以越过等待中的 I1 先发射它。';
+    else if(event.mul===id) message=event.bypass?'I0 已算出 6，旁路能够提供结果；物理寄存器写回和 ROB 完成标记尚未在本事件发生。':'乘法通道正在计算 2 × 3；I0 已离开 IQ，但它的 ROB 项仍保持未完成。';
+    else if(event.iq.includes(id)) message=id===1?(event.bypass?'I1 的 p40 值可通过旁路取得。它已具备本教学路径中的发射条件，下一事件将被发射。':'I1 已登记到 IQ，等待生产者 I0 的 p40；它可以先进入队列，即使当前还不能执行。'):'输入已就绪，正在 IQ 等待匹配通道与调度选择；进队列不等于已经发射。';
+    else if(event.allocated.includes(id)) message='已重命名并分配 ROB 项，等待分派；目的新版本是 '+op.phys+'。'+(id===1?'它的 x5 源已经固定为 p40。':'');
+    else message='还在前端等待重命名。译码能够识别指令类型，尚未为它分配本例的新物理目的版本。';
+    $('focus-detail').textContent=message;
+  }
+  function render(animate=true) {
+    const positions=new Map(Array.from(document.querySelectorAll('[data-moving]')).map(el=>[el.dataset.moving,el.getBoundingClientRect()]));
+    const event=events[step];
+    $('counter').textContent='事件 '+step+' / '+(events.length-1);
+    $('event-title').textContent=event.title;
+    $('event-detail').textContent=event.detail;
+    $('prev').disabled=step===0;
+    $('next').disabled=step===events.length-1;
+    document.querySelectorAll('[data-instruction]').forEach(button=>button.setAttribute('aria-pressed',String(Number(button.dataset.instruction)===selected)));
+    fill('front',event.front.map(id=>token(id,event.allocated.includes(id)?'已重命名 · 待分派':'待重命名',event.allocated.includes(id)?'ROB 项已分配':'按程序顺序进入',event)),'三条指令均已分派');
+    fill('iq',event.iq.map(id=>token(id,id===1&&!event.bypass?'等待 p40':'就绪 · 可成为候选',id===1?(event.bypass?'I0 的结果可通过旁路提供':'生产者 I0 尚未提供有效数据'):'等待对应执行通道与调度选择',event)),'当前没有等待首次执行的操作');
+    fill('mul',event.mul===undefined?[]:[token(event.mul,event.bypass?'结果 6 可旁路':'执行中：2 × 3',event.bypass?'尚未写回 / ROB 尚未完成':'IQ 已移出；ROB 继续追踪',event)],'通道空闲');
+    fill('alu',event.alu===undefined?[]:[token(event.alu,event.alu===1?'执行中：6 + 10':'执行中：20 + 4',event.alu===1?'输入 6 来自 I0 旁路':'独立于 I0 / I1',event)],'通道空闲');
+    fill('writeback',event.done.filter(id=>!event.committed.includes(id)).map(id=>token(id,instruction[id].phys+' = '+instruction[id].result+' · 有效','已完成，等待顺序提交',event)),'没有尚待提交的已写回结果');
+    const head=event.allocated.find(id=>!event.committed.includes(id));
+    $('rob').innerHTML=instruction.map(op=>{
+      const allocated=event.allocated.includes(op.id),done=event.done.includes(op.id),committed=event.committed.includes(op.id);
+      const state=committed?'已提交':done?'已完成 · 待提交':allocated?'未完成':'尚未分配';
+      return '<div class="rob-item i'+op.id+(head===op.id?' head':'')+(committed?' committed':'')+'"><strong>I'+op.id+'</strong>'+(head===op.id?'<span class="head-tag">当前队首</span>':'')+'<small>'+escape(op.asm)+'</small><div class="state">'+state+'</div><small>'+(committed?'已退出 ROB，保留记录便于对照':allocated?(done?'有效结果已写回':'执行完成状态尚未确立'):'在重命名时分配')+'</small></div>';
+    }).join('');
+    $('finish-order').textContent=event.done.length?event.done.map(id=>'I'+id).join(' → '):'—';
+    $('commit-order').textContent=event.committed.length?event.committed.map(id=>'I'+id).join(' → '):'—';
+    $('physical').innerHTML=instruction.map(op=>{
+      const allocated=event.allocated.includes(op.id),done=event.done.includes(op.id);
+      let value=!allocated?'尚未分配':done?op.result+' · valid = 1':'尚未写回 · valid = 0';
+      if(op.id===0&&event.bypass)value='未写回；旁路可提供 6';
+      return '<tr><td>'+op.arch+'</td><td>'+ (allocated?op.phys:'p'+(5+op.id)+'（旧版本）')+'</td><td class="value '+(done?'':event.bypass&&op.id===0?'bypass':'pending')+'">'+value+'</td></tr>';
+    }).join('');
+    $('architectural').innerHTML=instruction.map(op=>'<tr><td>'+op.arch+'</td><td class="value">'+(event.committed.includes(op.id)?op.result:op.old)+'</td><td>'+(event.committed.includes(op.id)?'I'+op.id+' 已提交':'旧的已提交值')+'</td></tr>').join('');
+    focus(event);
+    if(animate&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      document.querySelectorAll('[data-moving]').forEach(el=>{
+        const old=positions.get(el.dataset.moving),now=el.getBoundingClientRect();
+        if(old&&(Math.abs(old.x-now.x)>1||Math.abs(old.y-now.y)>1)) el.animate([{transform:'translate('+(old.x-now.x)+'px,'+(old.y-now.y)+'px)'},{transform:'translate(0,0)'}],{duration:300,easing:'ease-out'});
+      });
+    }
+  }
+  function stop(){if(timer!==null){clearInterval(timer);timer=null;}$('play').textContent='自动播放';$('play').setAttribute('aria-pressed','false');}
+  $('prev').addEventListener('click',()=>{stop();if(step>0){step--;render();}});
+  $('next').addEventListener('click',()=>{stop();if(step<events.length-1){step++;render();}});
+  $('play').setAttribute('aria-pressed','false');
+  $('play').addEventListener('click',()=>{
+    if(timer!==null){stop();return;}
+    if(step===events.length-1){step=0;render();}
+    $('play').textContent='暂停';$('play').setAttribute('aria-pressed','true');
+    timer=setInterval(()=>{if(step<events.length-1){step++;render();}if(step===events.length-1)stop();},2100);
+  });
+  document.querySelectorAll('[data-instruction]').forEach(button=>button.addEventListener('click',()=>{selected=Number(button.dataset.instruction);render(false);}));
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
+  render(false);
+})();
+</script>
+</body>
+</html>

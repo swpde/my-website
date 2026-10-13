@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="计算机体系结构交互学习：Cache 地址映射与命中、RSD 指令分派与乱序执行。">
+  <meta name="color-scheme" content="light">
+  <title>架构实验室 · 交互教程</title>
+  <style>
+    :root{--paper:#f5f6f2;--ink:#182c2c;--muted:#61736f;--line:#dbe2dc;--green:#126d59;--mono:ui-monospace,Consolas,monospace}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.7 system-ui,"Microsoft YaHei",sans-serif}a{color:inherit}a:focus-visible{outline:3px solid var(--green);outline-offset:6px}main,.top,.footer{max-width:1120px;margin:auto;padding-left:28px;padding-right:28px}.top{display:flex;align-items:center;justify-content:space-between;padding-top:24px;padding-bottom:24px;border-bottom:1px solid var(--line)}.brand{font-weight:750;letter-spacing:.04em;display:flex;gap:12px;align-items:center}.mark{background:var(--green);color:#fff;width:34px;height:34px;display:grid;place-items:center;border-radius:8px;font-family:var(--mono);font-size:19px}.top-note{font-size:12px;color:var(--muted);font-family:var(--mono)}.hero{padding:68px 0 52px;display:grid;grid-template-columns:1.35fr 1fr;gap:50px;align-items:center}.eyebrow{color:var(--green);font:12px/1.5 var(--mono);letter-spacing:.15em}.hero h1{font-size:clamp(34px,4.5vw,52px);line-height:1.3;letter-spacing:-.04em;margin:17px 0 20px;font-weight:750}.hero h1 span{color:var(--green)}.hero p{color:var(--muted);max-width:530px;margin:0;font-size:16px}.hero-art{border:1px solid var(--line);border-radius:16px;background:#eaf0e8;padding:18px 16px}.hero-art svg{width:100%;display:block;height:auto}.section-head{display:flex;align-items:center;gap:18px;margin-bottom:22px}.section-head h2{font-size:18px;margin:0}.section-head .rule{height:1px;flex:1;background:var(--line)}.section-head small{font-family:var(--mono);color:var(--muted);font-size:12px}.lessons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.lesson{display:flex;flex-direction:column;border:1px solid var(--line);background:#fff;border-radius:16px;padding:28px;text-decoration:none;transition:transform .18s,border-color .18s,box-shadow .18s}.lesson:hover{transform:translateY(-4px);border-color:#8eb5a8;box-shadow:0 12px 30px #193d2d0b}.lesson-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.number{color:var(--muted);font:12px var(--mono)}.badge{background:#edf4ef;color:var(--green);padding:4px 10px;border-radius:5px;font-size:12px}.lesson h3{font-size:24px;line-height:1.4;margin:0 0 12px}.lesson p{color:var(--muted);font-size:14px;margin:0 0 24px}.diagram{height:156px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#f5f7f4;margin-top:auto;overflow:hidden}.diagram svg{width:100%;max-width:380px;height:148px}.topics{display:flex;gap:7px;flex-wrap:wrap;margin-top:22px}.topics span{font-size:12px;color:var(--muted);padding:3px 9px;border:1px solid var(--line);border-radius:5px}.enter{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:18px;margin-top:24px;font-size:14px;font-weight:650;color:var(--green)}.enter b{font-size:20px;font-weight:400}.how{display:flex;align-items:flex-start;gap:16px;margin:36px 0 54px;padding:22px 24px;background:#eaf0e8;border-radius:12px}.how strong{font-size:14px}.how p{margin:3px 0 0;font-size:14px;color:var(--muted)}.how-index{font:14px var(--mono);color:var(--green);padding-top:3px}.footer{padding-top:20px;padding-bottom:28px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;font-size:12px;color:var(--muted)}
+    @media(max-width:760px){.hero{grid-template-columns:1fr;gap:28px;padding:42px 0 34px}.hero-art{max-width:450px}.lessons{grid-template-columns:1fr}.top-note{display:none}.lesson{padding:22px}main,.top,.footer{padding-left:20px;padding-right:20px}.footer{flex-wrap:wrap}.how{margin-bottom:36px}}
+    @media(prefers-reduced-motion:reduce){.lesson{transition:none}.lesson:hover{transform:none}}
+  </style>
+</head>
+<body>
+  <header class="top"><div class="brand"><span class="mark" aria-hidden="true">⎔</span>架构实验室</div><span class="top-note">COMPUTER ARCHITECTURE / INTERACTIVE</span></header>
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div><div class="eyebrow">LEARN BY EXPLORING</div><h1 id="hero-title">让抽象的原理，<br>变成<span>看得见的过程。</span></h1><p>从一次地址访问，到三条指令的执行。改变参数、逐步观察，把计算机体系结构里的关键关系串起来。</p></div>
+      <div class="hero-art"><svg viewBox="0 0 390 200" role="img" aria-label="从指令到处理器，再到缓存与内存的学习主题示意图"><g fill="none" stroke="#98b1a4" stroke-width="1.5"><path d="M95 100H150M240 100H295M195 55V25H340V65M195 145V174H50V137"/></g><g font-family="system-ui, sans-serif" text-anchor="middle"><rect x="15" y="67" width="80" height="66" rx="10" fill="#fff"/><text x="55" y="96" fill="#274d40" font-size="15">指令</text><text x="55" y="115" fill="#6c8076" font-size="10">INSTRUCTION</text><rect x="150" y="55" width="90" height="90" rx="12" fill="#126d59"/><text x="195" y="97" fill="#fff" font-size="21">CPU</text><text x="195" y="118" fill="#c2dfd5" font-size="11">执行与调度</text><rect x="295" y="67" width="80" height="66" rx="10" fill="#fff"/><text x="335" y="96" fill="#274d40" font-size="15">Cache</text><text x="335" y="115" fill="#6c8076" font-size="10">地址与数据</text><circle cx="50" cy="174" r="4" fill="#126d59"/><circle cx="340" cy="25" r="4" fill="#126d59"/></g></svg></div>
+    </section>
+    <section aria-labelledby="lessons-title">
+      <div class="section-head"><h2 id="lessons-title">选择一个实验</h2><span class="rule"></span><small>02 LESSONS</small></div>
+      <div class="lessons">
+        <!-- 新教程：复制一张 lesson 卡片，并把 href 改成 ./新文件夹/。 -->
+        <a class="lesson" href="./cache/" aria-labelledby="cache-title">
+          <div class="lesson-top"><span class="number">LAB / 01</span><span class="badge">存储系统</span></div>
+          <h3 id="cache-title">Cache：从地址到命中</h3><p>拆分 Tag、Index、Offset，观察选组、比较与整行填充，理解一个地址怎样找到缓存里的数据。</p>
+          <div class="diagram"><svg viewBox="0 0 380 148" aria-hidden="true"><g font-family="system-ui, sans-serif" text-anchor="middle" font-size="13"><rect x="30" y="24" width="130" height="37" rx="5" fill="#eee6f6"/><text x="95" y="48" fill="#745093">Tag</text><rect x="164" y="24" width="100" height="37" rx="5" fill="#dfedf3"/><text x="214" y="48" fill="#326c83">Index</text><rect x="268" y="24" width="82" height="37" rx="5" fill="#f8ebd4"/><text x="309" y="48" fill="#957030">Offset</text><path d="M214 65V86" stroke="#326c83" stroke-width="1.5"/><rect x="67" y="90" width="246" height="34" rx="5" fill="#e3eee4" stroke="#9fbea8"/><text x="190" y="112" fill="#426b50">选组 → 比较 Tag → 选择数据</text></g></svg></div>
+          <div class="topics"><span>地址映射</span><span>组相联</span><span>命中 / 缺失</span></div><div class="enter"><span>打开交互教程</span><b aria-hidden="true">↗</b></div>
+        </a>
+        <a class="lesson" href="./rsd-iq/" aria-labelledby="rsd-title">
+          <div class="lesson-top"><span class="number">LAB / 02</span><span class="badge">处理器执行</span></div>
+          <h3 id="rsd-title">RSD：三条指令如何执行</h3><p>跟随一条乘法和两条加法，逐步观察 IQ 等待、依赖解除、乱序完成与 ROB 顺序提交。</p>
+          <div class="diagram"><svg viewBox="0 0 380 148" aria-hidden="true"><g font-family="system-ui, sans-serif" font-size="12"><text x="26" y="34" fill="#657970">程序顺序</text><text x="26" y="103" fill="#657970">完成顺序</text><g text-anchor="middle"><rect x="112" y="15" width="64" height="30" rx="5" fill="#dfeaf8"/><text x="144" y="35" fill="#346293">I0 · mul</text><rect x="194" y="15" width="64" height="30" rx="5" fill="#faecd9"/><text x="226" y="35" fill="#8d662d">I1 · add</text><rect x="276" y="15" width="64" height="30" rx="5" fill="#e1eee5"/><text x="308" y="35" fill="#3e7852">I2 · add</text><path d="M144 48L226 83M226 48L308 83M308 48L144 83" fill="none" stroke="#9dada4" stroke-width="1.5"/><rect x="112" y="86" width="64" height="30" rx="5" fill="#e1eee5"/><text x="144" y="106" fill="#3e7852">I2</text><rect x="194" y="86" width="64" height="30" rx="5" fill="#dfeaf8"/><text x="226" y="106" fill="#346293">I0</text><rect x="276" y="86" width="64" height="30" rx="5" fill="#faecd9"/><text x="308" y="106" fill="#8d662d">I1</text></g></g></svg></div>
+          <div class="topics"><span>发射队列 IQ</span><span>数据依赖</span><span>顺序提交</span></div><div class="enter"><span>打开交互演示</span><b aria-hidden="true">↗</b></div>
+        </a>
+      </div>
+    </section>
+    <aside class="how"><span class="how-index" aria-hidden="true">→</span><div><strong>建议从 Cache 开始，再探索指令调度。</strong><p>教程内可以自由调整参数或切换步骤。先观察现象，再对照说明理解原因。</p></div></aside>
+  </main>
+  <footer class="footer"><span>架构实验室 · 计算机体系结构交互学习</span><span>教学模型，用于理解原理。</span></footer>
+</body>
+</html>
